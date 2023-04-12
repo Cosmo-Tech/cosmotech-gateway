@@ -1,11 +1,12 @@
+// Copyright (c) Cosmo Tech.
+// Licensed under the MIT license.
 package com.cosmotech.gateway
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
-@SpringBootApplication
-class GatewayApplication
+@SpringBootApplication class GatewayApplication
 
 fun main(args: Array<String>) {
-	runApplication<GatewayApplication>(*args)
+  runApplication<GatewayApplication>(args = args)
 }
