@@ -7,22 +7,24 @@ import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("org.springframework.boot") version "3.0.6-SNAPSHOT"
-  id("io.spring.dependency-management") version "1.1.0"
-  kotlin("jvm") version "1.7.22"
-  kotlin("plugin.spring") version "1.7.22"
-  id("com.google.cloud.tools.jib") version "3.3.1" apply true
-  id("com.diffplug.spotless") version "6.18.0" apply true
-  id("io.gitlab.arturbosch.detekt") version "1.22.0" apply true
+  val kotlinVersion = "1.9.0"
+  id("org.springframework.boot") version "3.2.2"
+  id("io.spring.dependency-management") version "1.1.4"
+  kotlin("jvm") version kotlinVersion
+  kotlin("plugin.spring") version kotlinVersion
+  id("com.google.cloud.tools.jib") version "3.4.0" apply true
+  id("com.diffplug.spotless") version "6.22.0" apply true
+  id("io.gitlab.arturbosch.detekt") version "1.23.1" apply true
 }
 
 group = "com.cosmotech"
 
 version = "0.0.1-SNAPSHOT"
 
-java.sourceCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_19
 
-val kotlinJvmTarget = 17
+val kotlinJvmTarget = 19
+val kotlinVersion = "1.9.0"
 
 repositories {
   mavenCentral()
@@ -30,14 +32,17 @@ repositories {
   maven { url = uri("https://repo.spring.io/snapshot") }
 }
 
-extra["springCloudVersion"] = "2022.0.2"
+extra["springCloudVersion"] = "2023.0.0"
+
+// Checks
+val detektVersion = "1.23.1"
 
 dependencies {
   // Workaround until Detekt adds support for JVM Target 17
   // See https://github.com/detekt/detekt/issues/4287
-  detekt("io.gitlab.arturbosch.detekt:detekt-cli:1.22.0")
-  detekt("io.gitlab.arturbosch.detekt:detekt-formatting:1.22.0")
-  detekt("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.7.22")
+  detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
+  detekt("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
+  detektPlugins("io.gitlab.arturbosch.detekt:detekt-rules-libraries:$detektVersion")
 
   // implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
@@ -129,7 +134,7 @@ tasks.withType<Detekt>().configureEach {
 }
 
 configure<JibExtension> {
-  from { image = "eclipse-temurin:17-alpine" }
+  from { image = "eclipse-temurin:19-alpine" }
   to { image = "${project.group}/${project.name}:${project.version}" }
   container {
     format = OCI
@@ -153,7 +158,7 @@ configure<JibExtension> {
 tasks.withType<KotlinCompile> {
   kotlinOptions {
     freeCompilerArgs = listOf("-Xjsr305=strict")
-    jvmTarget = "17"
+    jvmTarget = kotlinJvmTarget.toString()
   }
 }
 
