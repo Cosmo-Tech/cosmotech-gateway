@@ -5,7 +5,7 @@ logging:
    org.springframework.web.reactive.function.client: TRACE
 
 server:
-  port: 8080
+  port: 8060
 
 spring:
   application:
