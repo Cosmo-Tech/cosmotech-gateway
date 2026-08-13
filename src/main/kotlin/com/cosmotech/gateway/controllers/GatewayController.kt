@@ -9,8 +9,8 @@ import reactor.core.publisher.Mono
 @RestController
 class GatewayController {
 
-    @GetMapping(value = ["/about"])
-    fun about(): Mono<String> {
-        return Mono.just("this is an about")
-    }
+  @GetMapping(value = ["/about"])
+  fun about(): Mono<String> {
+    return Mono.just("this is an about")
+  }
 }

@@ -3,8 +3,8 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.google.cloud.tools.jib.api.buildplan.ImageFormat.OCI
 import com.google.cloud.tools.jib.gradle.JibExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.springframework.boot.gradle.tasks.run.BootRun
 
 plugins {
@@ -30,8 +30,16 @@ repositories {
   mavenCentral()
 }
 
-// Checks
-val detektVersion = "2.0.0-alpha.6"
+buildscript {
+  dependencies {
+    // This dependency is needed by jib-gradle-plugin to handle correctly
+    // zstd compressed layers in docker images (e.g. used by Docker Hardened Images)
+    // here is some relative links:
+    // issue : https://github.com/GoogleContainerTools/jib/issues/3714
+    // PR: https://github.com/GoogleContainerTools/jib/pull/3717
+    classpath("com.github.luben:zstd-jni:1.5.7-13")
+  }
+}
 
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
@@ -40,10 +48,14 @@ dependencies {
   implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
+
 extra["springCloudVersion"] = "2025.1.2"
-dependencyManagement{
+
+dependencyManagement {
   imports {
-    mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
+    mavenBom(
+        "org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}"
+    )
   }
 }
 
@@ -52,8 +64,8 @@ configure<SpotlessExtension> {
 
   val licenseHeaderComment =
       """
-        // Copyright (c) Cosmo Tech.
-        // Licensed under the MIT license.
+      // Copyright (c) Cosmo Tech.
+      // Licensed under the MIT license.
       """
           .trimIndent()
 
@@ -79,11 +91,11 @@ configure<JibExtension> {
     image = "${project.property("baseimage.name")}"
     auth {
       username =
-        project.findProperty("baseimage.repository.user")?.toString()
-          ?: System.getenv("BASEIMAGE_REPOSITORY_USER")
+          project.findProperty("baseimage.repository.user")?.toString()
+              ?: System.getenv("BASEIMAGE_REPOSITORY_USER")
       password =
-        project.findProperty("baseimage.repository.password")?.toString()
-          ?: System.getenv("BASEIMAGE_REPOSITORY_PASSWORD")
+          project.findProperty("baseimage.repository.password")?.toString()
+              ?: System.getenv("BASEIMAGE_REPOSITORY_PASSWORD")
     }
   }
   to { image = "${project.group}/${project.name}:${project.version}" }
@@ -91,17 +103,17 @@ configure<JibExtension> {
     format = OCI
     labels.putAll(mapOf("maintainer" to "Cosmo Tech"))
     environment =
-      mapOf(
-        "JAVA_TOOL_OPTIONS" to
+        mapOf(
+            "JAVA_TOOL_OPTIONS" to
                 "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005"
-      )
+        )
     jvmFlags =
-      listOf(
-        // Make sure Spring DevTools is disabled in production as running it is a
-        // security risk
-        "-Dspring.devtools.restart.enabled=false"
-      )
-    ports = listOf("5005", "8080", "8081")
+        listOf(
+            // Make sure Spring DevTools is disabled in production as running it is a
+            // security risk
+            "-Dspring.devtools.restart.enabled=false"
+        )
+    ports = listOf("5005", "8060")
     // Docker Best Practice : run as non-root.
     // These are the 'nobody' UID and GID inside the image
     user = "65534:65534"
@@ -130,6 +142,5 @@ tasks.getByName<BootRun>("bootRun") {
 
   args = listOf("--spring.profiles.active=dev")
 }
-
 
 tasks.withType<Test> { useJUnitPlatform() }

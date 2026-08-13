@@ -18,40 +18,44 @@ import org.springframework.security.web.server.util.matcher.ServerWebExchangeMat
 @EnableWebFluxSecurity
 class SecurityConfig {
 
-    // Public endpoints
-    val endpointSecurityPublic =
-        listOf(
-            "/about",
-        )
+  // Public endpoints
+  val endpointSecurityPublic =
+      listOf(
+          "/about",
+      )
 
+  @Bean
+  fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain? {
+    http
+        .csrf { csrfConfigurer -> csrfConfigurer.disable() }
+        .authorizeExchange { exchange ->
+          exchange
+              .matchers(
+                  ServerWebExchangeMatchers.pathMatchers(HttpMethod.OPTIONS, "/**"),
+              )
+              .permitAll()
 
-    @Bean
-    fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain? {
-        http
-            .csrf { csrfConfigurer -> csrfConfigurer.disable() }
-            .authorizeExchange { exchange ->
-
-            exchange.matchers(
-                ServerWebExchangeMatchers.pathMatchers(HttpMethod.OPTIONS,"/**"),
-            ).permitAll()
-
-            endpointSecurityPublic.forEach {
-                path -> exchange.matchers(
-                    ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET,path),
-                ).permitAll()
-            }
-            exchange.anyExchange().authenticated()
+          endpointSecurityPublic.forEach { path ->
+            exchange
+                .matchers(
+                    ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET, path),
+                )
+                .permitAll()
+          }
+          exchange.anyExchange().authenticated()
         }
-            .oauth2Login(Customizer.withDefaults())
-            .oauth2ResourceServer { oauth2 ->
-                oauth2!!.jwt(Customizer.withDefaults())
-            }
+        .oauth2Login(Customizer.withDefaults())
+        .oauth2ResourceServer { oauth2 ->
+          oauth2!!.jwt(Customizer.withDefaults())
+        }
 
-        return http.build()
-    }
+    return http.build()
+  }
 
-    @Bean
-    fun reactiveJwtDecoder(@Value("\${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") jwkSetUri: String): ReactiveJwtDecoder {
-        return NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build()
-    }
+  @Bean
+  fun reactiveJwtDecoder(
+      @Value("\${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") jwkSetUri: String
+  ): ReactiveJwtDecoder {
+    return NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build()
+  }
 }
