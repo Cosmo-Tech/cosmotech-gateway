@@ -38,9 +38,6 @@ Or via a package manager:
 ```bash
 # Ubuntu / Debian
 sudo apt install openjdk-25-jdk
-
-# macOS (Homebrew)
-brew install openjdk@25
 ```
 
 **Git**:
@@ -48,9 +45,6 @@ brew install openjdk@25
 ```bash
 # Ubuntu / Debian
 sudo apt install git
-
-# macOS (Homebrew)
-brew install git
 ```
 
 **Docker** (optional): follow the [official Docker documentation](https://docs.docker.com/get-docker/) for your operating system.
