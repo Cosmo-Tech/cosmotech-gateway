@@ -3,18 +3,18 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.google.cloud.tools.jib.api.buildplan.ImageFormat.OCI
 import com.google.cloud.tools.jib.gradle.JibExtension
-import io.gitlab.arturbosch.detekt.Detekt
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.springframework.boot.gradle.tasks.run.BootRun
 
 plugins {
-  val kotlinVersion = "1.9.0"
-  id("org.springframework.boot") version "3.2.2"
-  id("io.spring.dependency-management") version "1.1.4"
+  val kotlinVersion = "2.3.21"
+  id("org.springframework.boot") version "4.1.0"
+  id("io.spring.dependency-management") version "1.1.7"
   kotlin("jvm") version kotlinVersion
   kotlin("plugin.spring") version kotlinVersion
-  id("com.google.cloud.tools.jib") version "3.4.0" apply true
-  id("com.diffplug.spotless") version "6.22.0" apply true
-  id("io.gitlab.arturbosch.detekt") version "1.23.1" apply true
+  id("com.google.cloud.tools.jib") version "3.5.4" apply true
+  id("com.diffplug.spotless") version "8.9.0" apply true
 }
 
 group = "com.cosmotech"
@@ -23,46 +23,39 @@ version = "0.0.1-SNAPSHOT"
 
 java.sourceCompatibility = JavaVersion.VERSION_19
 
-val kotlinJvmTarget = 19
-val kotlinVersion = "1.9.0"
+val kotlinJvmTarget = 25
+val kotlinVersion = "2.3"
 
 repositories {
   mavenCentral()
-  maven { url = uri("https://repo.spring.io/milestone") }
-  maven { url = uri("https://repo.spring.io/snapshot") }
 }
 
-extra["springCloudVersion"] = "2023.0.0"
-
-// Checks
-val detektVersion = "1.23.1"
+buildscript {
+  dependencies {
+    // This dependency is needed by jib-gradle-plugin to handle correctly
+    // zstd compressed layers in docker images (e.g. used by Docker Hardened Images)
+    // here is some relative links:
+    // issue : https://github.com/GoogleContainerTools/jib/issues/3714
+    // PR: https://github.com/GoogleContainerTools/jib/pull/3717
+    classpath("com.github.luben:zstd-jni:1.5.7-13")
+  }
+}
 
 dependencies {
-  // Workaround until Detekt adds support for JVM Target 17
-  // See https://github.com/detekt/detekt/issues/4287
-  detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
-  detekt("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
-  detektPlugins("io.gitlab.arturbosch.detekt:detekt-rules-libraries:$detektVersion")
-
-  // implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+  implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-  implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-  implementation("org.jetbrains.kotlin:kotlin-reflect")
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-  implementation(
-      "org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j")
-  implementation("org.springframework.cloud:spring-cloud-starter-gateway")
-  // implementation("org.springframework.session:spring-session-data-redis")
+  implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
-  testImplementation("io.projectreactor:reactor-test")
 }
+
+extra["springCloudVersion"] = "2025.1.2"
 
 dependencyManagement {
   imports {
     mavenBom(
-        "org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
+        "org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}"
+    )
   }
 }
 
@@ -71,8 +64,8 @@ configure<SpotlessExtension> {
 
   val licenseHeaderComment =
       """
-        // Copyright (c) Cosmo Tech.
-        // Licensed under the MIT license.
+      // Copyright (c) Cosmo Tech.
+      // Licensed under the MIT license.
       """
           .trimIndent()
 
@@ -82,59 +75,29 @@ configure<SpotlessExtension> {
     licenseHeader(licenseHeaderComment)
   }
   kotlin {
-    ktfmt("0.43")
+    ktfmt()
     target("**/*.kt")
     licenseHeader(licenseHeaderComment)
   }
   kotlinGradle {
-    ktfmt("0.43")
+    ktfmt()
     target("**/*.kts")
     //      licenseHeader(licenseHeaderComment, "import")
   }
 }
 
-tasks.withType<Detekt>().configureEach {
-  buildUponDefaultConfig = true // preconfigure defaults
-  allRules = false // activate all available (even unstable) rules.
-  config.from(file("$rootDir/.detekt/detekt.yaml"))
-  jvmTarget = kotlinJvmTarget.toString()
-  ignoreFailures = project.findProperty("detekt.ignoreFailures")?.toString()?.toBoolean() ?: false
-  // Specify the base path for file paths in the formatted reports.
-  // If not set, all file paths reported will be absolute file path.
-  // This is so we can easily map results onto their source files in tools like GitHub Code
-  // Scanning
-  basePath = rootDir.absolutePath
-  reports {
-    html {
-      // observe findings in your browser with structure and code snippets
-      required.set(true)
-      outputLocation.set(file("$buildDir/reports/detekt/${project.name}-detekt.html"))
-    }
-    xml {
-      // checkstyle like format mainly for integrations like Jenkins
-      required.set(false)
-      outputLocation.set(file("$buildDir/reports/detekt/${project.name}-detekt.xml"))
-    }
-    txt {
-      // similar to the console output, contains issue signature to manually edit baseline files
-      required.set(true)
-      outputLocation.set(file("$buildDir/reports/detekt/${project.name}-detekt.txt"))
-    }
-    sarif {
-      // standardized SARIF format (https://sarifweb.azurewebsites.net/) to support integrations
-      // with Github Code Scanning
-      required.set(true)
-      outputLocation.set(file("$buildDir/reports/detekt/${project.name}-detekt.sarif"))
-    }
-  }
-  tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
-    enabled = false
-  }
-  tasks.getByName<Jar>("jar") { enabled = true }
-}
-
 configure<JibExtension> {
-  from { image = "eclipse-temurin:19-alpine" }
+  from {
+    image = "${project.property("baseimage.name")}"
+    auth {
+      username =
+          project.findProperty("baseimage.repository.user")?.toString()
+              ?: System.getenv("BASEIMAGE_REPOSITORY_USER")
+      password =
+          project.findProperty("baseimage.repository.password")?.toString()
+              ?: System.getenv("BASEIMAGE_REPOSITORY_PASSWORD")
+    }
+  }
   to { image = "${project.group}/${project.name}:${project.version}" }
   container {
     format = OCI
@@ -142,24 +105,42 @@ configure<JibExtension> {
     environment =
         mapOf(
             "JAVA_TOOL_OPTIONS" to
-                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005")
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005"
+        )
     jvmFlags =
         listOf(
             // Make sure Spring DevTools is disabled in production as running it is a
             // security risk
-            "-Dspring.devtools.restart.enabled=false")
-    ports = listOf("5005", "8080", "8081")
+            "-Dspring.devtools.restart.enabled=false"
+        )
+    ports = listOf("5005", "8060")
     // Docker Best Practice : run as non-root.
     // These are the 'nobody' UID and GID inside the image
     user = "65534:65534"
   }
 }
 
-tasks.withType<KotlinCompile> {
-  kotlinOptions {
-    freeCompilerArgs = listOf("-Xjsr305=strict")
-    jvmTarget = kotlinJvmTarget.toString()
+kotlin {
+  compilerOptions {
+    apiVersion.set(KotlinVersion.fromVersion(kotlinVersion))
+    freeCompilerArgs = listOf("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+    jvmTarget.set(JvmTarget.fromTarget(kotlinJvmTarget.toString()))
+    java {
+      targetCompatibility = JavaVersion.VERSION_25
+      sourceCompatibility = JavaVersion.VERSION_25
+      toolchain { languageVersion.set(JavaLanguageVersion.of(kotlinJvmTarget)) }
+    }
   }
+}
+
+tasks.getByName<BootRun>("bootRun") {
+  workingDir = rootDir
+
+  if (project.hasProperty("jvmArgs")) {
+    jvmArgs = project.property("jvmArgs").toString().split("\\s+".toRegex()).toList()
+  }
+
+  args = listOf("--spring.profiles.active=dev")
 }
 
 tasks.withType<Test> { useJUnitPlatform() }

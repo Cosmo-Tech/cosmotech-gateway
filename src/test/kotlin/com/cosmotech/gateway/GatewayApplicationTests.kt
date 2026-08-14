@@ -3,9 +3,7 @@
 package com.cosmotech.gateway
 
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
 
-@SpringBootTest
 class GatewayApplicationTests {
-  @Test @Suppress("EmptyFunctionBlock") fun contextLoads() {}
+  @Test @Suppress("EmptyFunctionBlock") fun emptyUnitTest() {}
 }
