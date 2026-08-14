@@ -6,4 +6,4 @@ pluginManagement {
   }
 }
 
-rootProject.name = "gateway"
+rootProject.name = "cosmotech-gateway"

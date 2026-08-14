@@ -9,7 +9,7 @@ server:
 
 spring:
   application:
-    name: gateway
+    name: cosmotech-gateway
   cloud:
     gateway:
       server:

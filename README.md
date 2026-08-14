@@ -85,7 +85,6 @@ To start the application locally:
 
 | Key | Description | Sample value |
 | --- | --- | --- |
-| `spring.application.name` | Name of the Spring Boot application | `gateway` |
 | `spring.cloud.gateway.server.webflux.default-filters` | Filters applied by default to all routes (here, relaying the OAuth2 token to downstream services) | `TokenRelay=` |
 | `spring.cloud.gateway.server.webflux.routes` | List of routes exposed by the gateway: id, target URI and request matching predicates | `id: test-service`, `uri: http://localhost:8040`, `predicates: Path=/test/**` |
 | `spring.security.oauth2.resource-server.jwt.jwk-set-uri` | URL of the JWK endpoint used to validate the signature of incoming JWT tokens | `http://localhost:8080/realms/test/protocol/openid-connect/certs` |
