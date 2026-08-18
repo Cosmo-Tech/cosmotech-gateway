@@ -3,7 +3,7 @@ spring:
     gateway:
       server:
         webflux:
-          default-filters:
+          defaultFilters:
             - TokenRelay=
           routes:
             - id: test-service
@@ -11,19 +11,17 @@ spring:
               predicates:
                 - Path=/test/**
 
-  security:
-    oauth2:
-      resource-server:
-        jwt:
-          jwk-set-uri: http://localhost:8080/realms/test/protocol/openid-connect/certs
-      client:
-        provider:
-          keycloak:
-            issuer-uri: http://localhost:8080/realms/test
-        registration:
-          keycloak-client:
-            provider: keycloak
-            client-id: gateway-client
-            client-secret: XXXXXXXXXX
-            authorization-grant-type: authorization_code
-            scope: ["openid"]
+csm:
+  platform:
+    gateway:
+      contextPath: "/"
+      port: 8060
+    identityProvider:
+      serverBaseUrl: "http://localhost:8080"
+      authorizationGrantType: "authorization_code"
+      identity:
+        clientId: "idp-gateway-client"
+        clientSecret: "changeme"
+        tenantId: "changeme"
+      scope:
+        - "openid"

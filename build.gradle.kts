@@ -21,7 +21,7 @@ group = "com.cosmotech"
 
 version = "0.0.1-SNAPSHOT"
 
-java.sourceCompatibility = JavaVersion.VERSION_19
+java.sourceCompatibility = JavaVersion.VERSION_25
 
 val kotlinJvmTarget = 25
 val kotlinVersion = "2.3"
@@ -45,6 +45,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
+  implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

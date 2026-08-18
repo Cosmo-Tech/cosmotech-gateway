@@ -22,6 +22,9 @@ class SecurityConfig {
   val endpointSecurityPublic =
       listOf(
           "/about",
+          "/actuator/prometheus",
+          "/actuator/health/**",
+          "/actuator/info",
       )
 
   @Bean

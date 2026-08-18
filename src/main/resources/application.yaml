@@ -2,11 +2,20 @@ logging:
   level:
    org.springframework.cloud.gateway: DEBUG
    org.springframework.security: DEBUG
-   org.springframework.web.reactive.function.client: TRACE
+   com.cosmotech: DEBUG
 
 server:
-  port: 8060
+  port: "${csm.platform.gateway.port}"
+  servlet:
+    context-path: ${csm.platform.gateway.contextPath}
 
+management:
+  server:
+    port: 8061
+  endpoints:
+    web:
+      exposure:
+        include: "*"
 spring:
   application:
     name: cosmotech-gateway
@@ -21,20 +30,19 @@ spring:
               uri: http://localhost:8040
               predicates:
                 - Path=/test/**
-
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8080/realms/test/protocol/openid-connect/certs
+          jwk-set-uri: "${csm.platform.gateway.identityProvider.serverBaseUrl}/realms/${csm.platform.gateway.identityProvider.identity.tenantId}/protocol/openid-connect/certs"
       client:
         provider:
           keycloak:
-            issuer-uri: http://localhost:8080/realms/test
+            issuer-uri: "${csm.platform.gateway.identityProvider.serverBaseUrl}/realms/${csm.platform.gateway.identityProvider.identity.tenantId}"
         registration:
           keycloak-client:
             provider: keycloak
-            client-id: gateway-client
-            client-secret: XXXXXXXXXX
-            authorization-grant-type: authorization_code
+            client-id: "${csm.platform.gateway.identityProvider.identity.clientId}"
+            client-secret: "${csm.platform.gateway.identityProvider.identity.clientSecret}"
+            authorization-grant-type: "${csm.platform.gateway.identityProvider.authorizationGrantType}"
             scope: ["openid"]
