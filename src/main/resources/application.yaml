@@ -38,7 +38,9 @@ spring:
       client:
         provider:
           keycloak:
+            authorization-uri: "${csm.platform.gateway.identityProvider.serverBaseUrl}/realms/${csm.platform.gateway.identityProvider.identity.tenantId}/protocol/openid-connect/auth"
             issuer-uri: "${csm.platform.gateway.identityProvider.serverBaseUrl}/realms/${csm.platform.gateway.identityProvider.identity.tenantId}"
+            token-uri: "${csm.platform.gateway.identityProvider.serverBaseUrl}/realms/${csm.platform.gateway.identityProvider.identity.tenantId}/protocol/openid-connect/token"
         registration:
           keycloak-client:
             provider: keycloak
