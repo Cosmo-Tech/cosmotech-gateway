@@ -6,8 +6,7 @@ logging:
 
 server:
   port: "${csm.platform.gateway.port}"
-  servlet:
-    context-path: ${csm.platform.gateway.contextPath}
+  #forward-headers-strategy: framework
 
 management:
   server:
@@ -17,6 +16,8 @@ management:
       exposure:
         include: "*"
 spring:
+  webflux:
+    base-path: ${csm.platform.gateway.contextPath}
   application:
     name: cosmotech-gateway
   cloud:
@@ -48,3 +49,5 @@ spring:
             client-secret: "${csm.platform.gateway.identityProvider.identity.clientSecret}"
             authorization-grant-type: "${csm.platform.gateway.identityProvider.authorizationGrantType}"
             scope: ["openid"]
+            # keeps the base-path in the callback URL even if a proxy strips/rewrites it
+            # redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
