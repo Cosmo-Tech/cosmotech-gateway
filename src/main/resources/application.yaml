@@ -1,8 +1,10 @@
 logging:
   level:
-   org.springframework.cloud.gateway: DEBUG
-   org.springframework.security: DEBUG
+   org.springframework.cloud.gateway: INFO
+   org.springframework.security: INFO
    com.cosmotech: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
 
 server:
   port: "${csm.platform.gateway.port}"
@@ -51,3 +53,16 @@ spring:
             scope: ["openid"]
             # keeps the base-path in the callback URL even if a proxy strips/rewrites it
             # redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+---
+# Any profile other than 'dev' (prod, docker, ...) switches to JSON console logs,
+# meant to be scraped by log aggregators (ELK, Loki, ...); MDC fields set by
+# AccessLogGlobalFilter are automatically included as top-level JSON keys.
+spring:
+  config:
+    activate:
+      on-profile: "!dev"
+logging:
+  structured:
+    format:
+      console: logstash
