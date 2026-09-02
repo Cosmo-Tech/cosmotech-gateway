@@ -1,0 +1,70 @@
+# Jaeger v2 configuration enabling Service Performance Monitoring (SPM):
+# the spanmetrics connector derives RED metrics from incoming spans, exposes them for
+# Prometheus to scrape, and jaeger_query reads them back to feed the "Monitor" tab.
+# Based on https://github.com/jaegertracing/jaeger/blob/main/cmd/jaeger/config-spm.yaml
+service:
+  extensions: [jaeger_storage, jaeger_query, healthcheckv2]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [jaeger_storage_exporter, spanmetrics]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      exporters: [prometheus]
+  telemetry:
+    resource:
+      service.name: jaeger
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+    logs:
+      level: INFO
+
+extensions:
+  healthcheckv2:
+    use_v2: true
+    http:
+  jaeger_query:
+    storage:
+      traces: some_storage
+      metrics: some_metrics_storage
+  jaeger_storage:
+    backends:
+      some_storage:
+        memory:
+          max_traces: 100000
+    metric_backends:
+      some_metrics_storage:
+        prometheus:
+          endpoint: http://prometheus:9090
+          normalize_calls: true
+          normalize_duration: true
+
+connectors:
+  spanmetrics:
+    metrics_flush_interval: ${env:SPANMETRICS_FLUSH_INTERVAL:-15s}
+
+receivers:
+  otlp:
+    protocols:
+      # Both must bind 0.0.0.0 (the collector defaults to localhost) to be reachable
+      # from outside the container, including Spring Boot's TCP readiness check.
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  batch:
+
+exporters:
+  jaeger_storage_exporter:
+    trace_storage: some_storage
+  prometheus:
+    endpoint: "0.0.0.0:8889"
