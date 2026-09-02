@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # RED metrics derived from spans by Jaeger's spanmetrics connector
+  - job_name: aggregated-trace-metrics
+    static_configs:
+      - targets: ["spm_metrics_source:8889"]
+  # Jaeger's own internal metrics
+  - job_name: jaeger-collector-metrics
+    static_configs:
+      - targets: ["spm_metrics_source:8888"]
