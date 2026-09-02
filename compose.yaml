@@ -1,0 +1,14 @@
+# Development-time services, started automatically by `./gradlew bootRun`
+# (spring-boot-docker-compose) and stopped when the application exits.
+services:
+  jaeger:
+    image: "jaegertracing/jaeger:2.11.0"
+    ports:
+      # OTLP gRPC/HTTP receivers, published on ephemeral host ports that Spring Boot discovers
+      - "4317"
+      - "4318"
+      # Jaeger UI: http://localhost:16686
+      - "16686:16686"
+    labels:
+      # Jaeger is not a natively supported image name, so declare the service connection it provides
+      org.springframework.boot.service-connection: "otel/opentelemetry-collector-contrib"

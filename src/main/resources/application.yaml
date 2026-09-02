@@ -4,7 +4,9 @@ logging:
    org.springframework.security: INFO
    com.cosmotech: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+    # %correlationId is contributed by Micrometer Tracing: [application,traceId,spanId]
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %correlationId%logger{36} - %msg%n"
+  include-application-name: true
 
 server:
   port: "${csm.platform.gateway.port}"
@@ -17,6 +19,56 @@ management:
     web:
       exposure:
         include: "*"
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  # Tags added to every meter and to every span/log resource, for multi-instance drill-down
+  observations:
+    key-values:
+      deployment.environment.name: "${DEPLOYMENT_ENVIRONMENT:local}"
+  metrics:
+    tags:
+      deployment.environment.name: "${DEPLOYMENT_ENVIRONMENT:local}"
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+      slo:
+        http.server.requests: "50ms,100ms,250ms,500ms,1s,2s,5s"
+  tracing:
+    sampling:
+      # A gateway sees every call of the platform: sample everything by default and lower it
+      # (e.g. 0.1) if the trace backend becomes a bottleneck.
+      probability: "${OTEL_TRACES_SAMPLER_ARG:1.0}"
+    # Nothing is shipped unless OTEL_EXPORT_ENABLED=true; spans/metrics/logs are still
+    # collected in-process and visible through the actuator endpoints.
+    export:
+      enabled: "${OTEL_EXPORT_ENABLED:false}"
+  logging:
+    export:
+      otlp:
+        enabled: "${OTEL_EXPORT_ENABLED:false}"
+  opentelemetry:
+    resource-attributes:
+      service.namespace: cosmotech
+      deployment.environment.name: "${DEPLOYMENT_ENVIRONMENT:local}"
+    tracing:
+      export:
+        otlp:
+          endpoint: "${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces"
+    logging:
+      export:
+        otlp:
+          endpoint: "${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/logs"
+  otlp:
+    metrics:
+      export:
+        enabled: "${OTEL_EXPORT_ENABLED:false}"
+        url: "${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics"
+        step: 30s
+
 spring:
   webflux:
     base-path: ${csm.platform.gateway.contextPath}
@@ -53,6 +105,19 @@ spring:
             scope: ["openid"]
             # keeps the base-path in the callback URL even if a proxy strips/rewrites it
             # redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+---
+# In dev, compose.yaml starts a Jaeger container and Spring Boot injects its OTLP endpoint,
+# so span export can be turned on out of the box. Jaeger only ingests traces: metrics and
+# logs stay local (actuator/console).
+spring:
+  config:
+    activate:
+      on-profile: "dev"
+management:
+  tracing:
+    export:
+      enabled: true
 
 ---
 # Any profile other than 'dev' (prod, docker, ...) switches to JSON console logs,
