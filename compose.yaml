@@ -14,9 +14,12 @@ services:
         # Host name expected by the Prometheus scrape configuration
         aliases: ["spm_metrics_source"]
     ports:
-      # OTLP gRPC/HTTP receivers, published on ephemeral host ports that Spring Boot discovers
-      - "4317"
-      - "4318"
+      # Fixed (not ephemeral) so other locally-run services, e.g. cosmotech-api, can also
+      # export to this same Jaeger via OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318.
+      # The gateway itself still uses Spring Boot's docker-compose service-connection
+      # auto-discovery, so this fixed mapping doesn't affect it.
+      - "4317:4317"
+      - "4318:4318"
       # Jaeger UI: http://localhost:16686
       - "16686:16686"
     labels:
