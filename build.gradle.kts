@@ -83,7 +83,7 @@ dependencies {
   implementation("io.micrometer:micrometer-registry-otlp")
   implementation("io.micrometer:micrometer-registry-prometheus")
   implementation(
-      "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$openTelemetryInstrumentationVersion"
+      "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$openTelemetryInstrumentationVersion",
   )
 
   // Starts compose.yaml (Jaeger) on bootRun and wires the OTLP endpoint automatically

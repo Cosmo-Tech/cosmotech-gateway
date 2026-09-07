@@ -68,7 +68,15 @@ class AccessLogGlobalFilter : WebFilter {
     MDC.put("spanId", spanId)
     try {
       logger.info(
-          "gateway_access method={} path={} routeId={} user={} remoteAddr={} status={} durationMs={} traceId={} spanId={}",
+          "gateway_access method={} " +
+              "path={} " +
+              "routeId={} " +
+              "user={} " +
+              "remoteAddr={} " +
+              "status={} " +
+              "durationMs={} " +
+              "traceId={} " +
+              "spanId={}",
           method,
           path,
           routeId,
