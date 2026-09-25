@@ -25,12 +25,16 @@ class SecurityConfig {
           "/actuator/prometheus",
           "/actuator/health/**",
           "/actuator/info",
+          "/swagger-ui.html",
+          "/swagger-ui/**",
+          "/v3/api-docs",
+          "/v3/api-docs/**",
+          "/openapi/**",
       )
 
   @Bean
   fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain? {
     http
-        .csrf { csrfConfigurer -> csrfConfigurer.disable() }
         .authorizeExchange { exchange ->
           exchange
               .matchers(
@@ -57,8 +61,6 @@ class SecurityConfig {
 
   @Bean
   fun reactiveJwtDecoder(
-      @Value("\${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") jwkSetUri: String
-  ): ReactiveJwtDecoder {
-    return NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build()
-  }
+      @Value("\${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") jwkSetUri: String,
+  ): ReactiveJwtDecoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build()
 }

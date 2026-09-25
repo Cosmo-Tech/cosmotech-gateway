@@ -33,6 +33,9 @@ val kotlinVersion = "2.4"
 val detektVersion = "2.0.0-alpha.6"
 val detektKotlinVersion = "2.4.10"
 
+// Dependencies
+val springdocOpenApiVersion = "3.1.1"
+
 repositories {
   mavenCentral()
 }
@@ -52,11 +55,13 @@ dependencies {
   detekt("dev.detekt:detekt-cli:$detektVersion")
   detekt("dev.detekt:detekt-rules-ktlint-wrapper:$detektVersion")
   detektPlugins("dev.detekt:detekt-rules-libraries:$detektVersion")
+  implementation(kotlin("reflect"))
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
+  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:$springdocOpenApiVersion")
   implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

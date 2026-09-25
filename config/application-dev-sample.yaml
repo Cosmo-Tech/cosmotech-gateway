@@ -6,22 +6,33 @@ spring:
           defaultFilters:
             - TokenRelay=
           routes:
+            # Exposes the OpenAPI description of "test-service" behind the gateway, so it
+            # can be aggregated by springdoc.swagger-ui.urls below.
             - id: test-service
               uri: http://localhost:8040
               predicates:
-                - Path=/test/**
+                - Path=/openapi/test-service
+              filters:
+                - RewritePath=/openapi/test-service, /v3/api-docs
+
+# Aggregated OpenAPI documentation for all services routed through the gateway.
+# See docs/openapi-aggregation.md for the full list of available configuration keys.
+springdoc:
+  swagger-ui:
+    urls-primary-name: cosmotech-gateway
+    urls:
+      - name: cosmotech-gateway
+        url: /v3/api-docs
+      - name: test-service
+        url: /openapi/test-service
 
 csm:
   platform:
     gateway:
       contextPath: "/"
       port: 8060
-    identityProvider:
-      serverBaseUrl: "http://localhost:8080"
-      authorizationGrantType: "authorization_code"
-      identity:
-        clientId: "idp-gateway-client"
-        clientSecret: "changeme"
-        tenantId: "changeme"
-      scope:
-        - "openid"
+      identityProvider:
+        serverBaseUrl: "http://localhost:8080"
+        identity:
+          clientId: "idp-gateway-client"
+          tenantId: "changeme"

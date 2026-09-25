@@ -8,7 +8,6 @@ logging:
 
 server:
   port: "${csm.platform.gateway.port}"
-  #forward-headers-strategy: framework
 
 management:
   server:
@@ -29,10 +28,13 @@ spring:
           default-filters:
             - TokenRelay=
           routes:
-            - id: test-service
+            # Public OpenAPI descriptions follow the /openapi/{service} convention.
+            - id: test-service-openapi
               uri: http://localhost:8040
               predicates:
-                - Path=/test/**
+                - Path=/openapi/test-service
+              filters:
+                - RewritePath=/openapi/test-service, /v3/api-docs
   security:
     oauth2:
       resourceserver:
@@ -48,11 +50,37 @@ spring:
           keycloak-client:
             provider: keycloak
             client-id: "${csm.platform.gateway.identityProvider.identity.clientId}"
-            client-secret: "${csm.platform.gateway.identityProvider.identity.clientSecret}"
-            authorization-grant-type: "${csm.platform.gateway.identityProvider.authorizationGrantType}"
+            client-authentication-method: none
+            authorization-grant-type: "authorization_code"
             scope: ["openid"]
-            # keeps the base-path in the callback URL even if a proxy strips/rewrites it
-            # redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+
+# Aggregation of the OpenAPI descriptions exposed by every service routed through
+# the gateway. Each entry below is proxied through a gateway route (see spring.cloud.gateway
+# routes above). OpenAPI descriptions are public under /openapi/{service}; API calls
+# remain protected by the gateway's centralized OAuth2 configuration.
+# See docs/openapi-aggregation.md for the full list of available configuration keys.
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    use-root-path: true
+    # Reuses the OAuth authorization across aggregated services and page reloads.
+    persist-authorization: true
+    # One entry per aggregated service. "url" is the gateway path, not the downstream
+    # service's own address (which stays defined in the gateway routes only).
+    urls-primary-name: cosmotech-gateway
+    urls:
+      - name: cosmotech-gateway
+        url: /v3/api-docs
+      - name: test-service
+        url: /openapi/test-service
+    oauth:
+      # Swagger UI runs in the browser and must use a public Keycloak client without
+      # a client secret. PKCE secures the authorization-code exchange.
+      client-id: "${csm.platform.gateway.identityProvider.identity.clientId}"
+      scopes: "openid,email,profile"
+      use-basic-authentication-with-access-code-grant: false
+      use-pkce-with-authorization-code-grant: true
 
 ---
 # Any profile other than 'dev' (prod, docker, ...) switches to JSON console logs,

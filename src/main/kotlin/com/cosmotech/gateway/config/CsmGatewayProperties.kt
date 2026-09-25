@@ -31,12 +31,6 @@ class CsmGatewayProperties(
 
       /** Identity available during run */
       val identity: CsmIdentity,
-
-      /** Authorization Grant Type */
-      val authorizationGrantType: String = "authorization_code",
-
-      /** List of client scope */
-      val scopes: List<String> = listOf("openid"),
   ) {
     data class CsmIdentity(
 
@@ -44,10 +38,7 @@ class CsmGatewayProperties(
         val tenantId: String = "cosmotech",
 
         /** Client identifier: default cosmotech-api-client */
-        val clientId: String = "cosmotech-gateway-client",
-
-        /** Client secret */
-        val clientSecret: String,
+        val clientId: String = "cosmotech-client-gateway",
     )
   }
 }

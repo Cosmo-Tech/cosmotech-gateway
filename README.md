@@ -9,9 +9,10 @@ Cosmotech Gateway is an API Gateway built on [Spring Cloud Gateway (WebFlux)](ht
 
 It is responsible for:
 
-- routing incoming requests to the various Cosmo Tech platform micro-services, based on configurable routes and predicates;
+- routing incoming requests to the various Cosmo Tech platform services, based on configurable routes and predicates;
 - securing these routes via OAuth2/OIDC, relying on an identity provider (Keycloak) for client authentication;
 - relaying the access token (`TokenRelay`) to downstream services so they can validate the authenticated user;
+- aggregating the OpenAPI descriptions exposed by downstream services behind a single Swagger UI, with a centralized Keycloak authorization-code flow secured by PKCE (see [docs/openapi-aggregation.md](docs/openapi-aggregation.md));
 - being packaged as an OCI container image using [Jib](https://github.com/GoogleContainerTools/jib), without requiring a Dockerfile.
 
 ## Technical prerequisites
@@ -59,6 +60,7 @@ All commands should be run from the project root, via the Gradle wrapper.
 | `./gradlew clean` | Removes build outputs (the `build/` directory) |
 | `./gradlew bootRun` | Starts the application locally with the Spring `dev` profile |
 | `./gradlew test` | Runs the unit tests |
+| `./gradlew detekt` | Runs Kotlin static analysis with Detekt |
 | `./gradlew spotlessCheck` | Checks code formatting and the presence of the license header |
 | `./gradlew spotlessApply` | Automatically fixes code formatting issues |
 | `./gradlew jibDockerBuild` | Builds an OCI container image in the local Docker registry |
@@ -86,13 +88,26 @@ To start the application locally:
 | Key | Description | Sample value |
 | --- | --- | --- |
 | `spring.cloud.gateway.server.webflux.default-filters` | Filters applied by default to all routes (here, relaying the OAuth2 token to downstream services) | `TokenRelay=` |
-| `spring.cloud.gateway.server.webflux.routes` | List of routes exposed by the gateway: id, target URI and request matching predicates | `id: test-service`, `uri: http://localhost:8040`, `predicates: Path=/test/**` |
-| `spring.security.oauth2.resource-server.jwt.jwk-set-uri` | URL of the JWK endpoint used to validate the signature of incoming JWT tokens | `http://localhost:8080/realms/test/protocol/openid-connect/certs` |
-| `spring.security.oauth2.client.provider.keycloak.issuer-uri` | URL of the Keycloak issuer used during the client-side OAuth2 authentication flow | `http://localhost:8080/realms/test` |
-| `spring.security.oauth2.client.registration.keycloak-client.provider` | Name of the referenced OAuth2 provider (must match the key declared under `provider`) | `keycloak` |
-| `spring.security.oauth2.client.registration.keycloak-client.client-id` | OAuth2 client identifier registered with Keycloak | `gateway-client` |
-| `spring.security.oauth2.client.registration.keycloak-client.client-secret` | OAuth2 client secret (never commit a real one; sample value shown here) | `XXXXXXXXXX` |
-| `spring.security.oauth2.client.registration.keycloak-client.authorization-grant-type` | OAuth2 flow type used for authentication | `authorization_code` |
-| `spring.security.oauth2.client.registration.keycloak-client.scope` | OIDC scopes requested during authentication | `["openid"]` |
+| `spring.cloud.gateway.server.webflux.routes` | Routes added or overridden for local development | `Path=/openapi/test-service` |
+| `springdoc.swagger-ui.urls` | OpenAPI descriptions displayed in the Swagger UI selector | `url: /openapi/test-service` |
+| `csm.platform.gateway.contextPath` | Gateway WebFlux base path | `/` |
+| `csm.platform.gateway.port` | Gateway HTTP port | `8060` |
+| `csm.platform.gateway.identityProvider.serverBaseUrl` | Keycloak base URL, without a trailing slash | `http://localhost:8080` |
+| `csm.platform.gateway.identityProvider.identity.tenantId` | Keycloak realm | `changeme` |
+| `csm.platform.gateway.identityProvider.identity.clientId` | Public Keycloak client shared by the gateway and Swagger UI | `idp-gateway-client` |
 
-> ⚠️ An OIDC-compatible identity provider (e.g. a local Keycloak instance) exposing a realm consistent with `issuer-uri` and `jwk-set-uri` is required for authentication to work.
+The main [application.yaml](src/main/resources/application.yaml) derives Spring Security's issuer, JWK,
+authorization and token endpoints from these identity-provider values. The shared client must be public,
+allow the authorization-code flow with PKCE S256, and accept these redirect URIs for local development:
+
+- `http://localhost:8060/swagger-ui/oauth2-redirect.html` for Swagger UI;
+- `http://localhost:8060/login/oauth2/code/keycloak-client` for Spring Security.
+
+## OpenAPI aggregation
+
+The gateway aggregates the OpenAPI descriptions of the services it routes to and exposes them through
+a single Swagger UI. OpenAPI documents are public, while API operations remain protected by OAuth2. See
+[docs/openapi-aggregation.md](docs/openapi-aggregation.md) for the full configuration reference and the
+Swagger UI authentication flow. Users authorize with their Keycloak credentials; the shared public client,
+scopes and PKCE settings are fixed by the gateway and require no user input. The resulting authorization is
+reused when switching between aggregated services that declare the common `oAuth2AuthCode` scheme.
