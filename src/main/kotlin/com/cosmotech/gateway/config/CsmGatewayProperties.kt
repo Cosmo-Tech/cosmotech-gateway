@@ -22,6 +22,17 @@ class CsmGatewayProperties(
 
       /** Identity provider configuration */
       val identityProvider: CsmIdentityProvider,
+
+      /** OpenAPI normalization applied to documents exposed by the gateway */
+      val openApiAggregation: OpenApiAggregation = OpenApiAggregation(),
+  )
+
+  data class OpenApiAggregation(
+      /** Enable central OpenAPI normalization */
+      val enabled: Boolean = true,
+
+      /** Public Gateway API server URLs keyed by OpenAPI document route */
+      val serverUrls: Map<String, String> = emptyMap(),
   )
 
   data class CsmIdentityProvider(

@@ -13,6 +13,57 @@ API operations remain protected by the gateway's centralized OAuth2 configuratio
 - The gateway's security configuration ([`SecurityConfig`](../src/main/kotlin/com/cosmotech/gateway/config/SecurityConfig.kt)) permits anonymous `GET` requests under `/openapi/**`. The downstream OpenAPI endpoint must therefore also be publicly readable.
 - All other routes fall through to `anyExchange().authenticated()`. The existing `TokenRelay` default filter forwards the authenticated user's access token to downstream API routes.
 - The gateway's own OpenAPI description declares the same `oAuth2AuthCode` authorization-code scheme as the platform services, so selecting the gateway also displays the **Authorize** button. `OpenApiConfig` injects the resolved `spring.security.oauth2.client.provider.keycloak` URLs and `springdoc.swagger-ui.oauth.scopes` directly; it does not rebuild Keycloak URLs.
+- `OpenApiAggregationGlobalFilter` can normalize successful OpenAPI responses on `/openapi/**`: it replaces upstream security schemes and requirements with the configured Gateway OAuth2 scheme and can replace each document's server URL with its public Gateway API route.
+
+### Gateway-Level Normalization
+
+Normalization is configured under `csm.platform.gateway.openApiAggregation` in `application.yaml` or Helm
+values:
+
+```yaml
+csm:
+  platform:
+    gateway:
+      openApiAggregation:
+        enabled: true
+        serverUrls:
+          "[/openapi/cosmotech-api]": /tenant/gateway-api
+          "[/openapi/cosmotech-modapi]": /tenant/modeling
+```
+
+`serverUrls` maps the path used to fetch an OpenAPI document to the public Gateway base path used for its
+operations. The value must be a browser-reachable Gateway URL path, not a Kubernetes service address. A
+mapping is optional; if none is configured for a document, its upstream `servers` value is preserved. Set
+`enabled` to `false` to pass OpenAPI documents through without normalization.
+
+These two URLs have different purposes. `springdoc.swagger-ui.urls` tells the browser where to **download the
+OpenAPI document**; `serverUrls` tells Swagger UI where to **send Try it out requests** described by that
+document. For example:
+
+```yaml
+springdoc:
+  swagger-ui:
+    urls:
+      - name: cosmotech-api
+        url: /openapi/cosmotech-api-service
+
+csm:
+  platform:
+    gateway:
+      openApiAggregation:
+        serverUrls:
+          "[/openapi/cosmotech-api-service]": /tenant-modapi-ci/run-api
+```
+
+Here, Swagger downloads the definition from `/openapi/cosmotech-api-service`, then sends its API operations
+to `/tenant-modapi-ci/run-api` on the same Gateway origin. The server URL is a base path: an operation such
+as `/projects` is called at `/tenant-modapi-ci/run-api/projects`.
+
+The normalizer replaces each downstream document's security schemes and applies the shared `oAuth2AuthCode`
+OAuth2 scheme to the document and all HTTP operations. The scheme name is fixed to match the existing Gateway
+definition; upstream scheme names do not need to match. All downstream services must accept access tokens from
+the shared Keycloak client; this option is unsuitable for services with intentionally public operations or
+different auth schemes.
 
 ## Adding a new service to the aggregation
 
@@ -95,6 +146,13 @@ variables, etc.). The full reference is documented by springdoc: <https://spring
 | `springdoc.swagger-ui.urls-primary-name` | Name of the service selected by default when the Swagger UI loads. | — |
 | `springdoc.swagger-ui.disable-swagger-default-url` | Disables the default Swagger Petstore demo entry. | `false` |
 | `springdoc.swagger-ui.persist-authorization` | Persists OAuth2 authorization so it can be reused across aggregated definitions and page reloads. | `true` |
+
+### Gateway OpenAPI Normalization
+
+| Key | Description | Default |
+| --- | --- | --- |
+| `csm.platform.gateway.openApiAggregation.enabled` | Enables rewriting of security schemes and operation requirements on successful `/openapi/**` responses. | `true` |
+| `csm.platform.gateway.openApiAggregation.serverUrls` | Map of OpenAPI document route paths to public Gateway operation base paths. Unmapped documents retain their upstream `servers`. | `{}` |
 
 ### Centralized OAuth2 authentication for "Try it out"
 
