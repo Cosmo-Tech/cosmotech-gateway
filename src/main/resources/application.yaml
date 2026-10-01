@@ -9,6 +9,13 @@ logging:
 server:
   port: "${csm.platform.gateway.port}"
 
+csm:
+  platform:
+    gateway:
+      openApiAggregation:
+        enabled: true
+        serverUrls: {}
+
 management:
   server:
     port: 8061
@@ -62,13 +69,13 @@ spring:
 # See docs/openapi-aggregation.md for the full list of available configuration keys.
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
-    use-root-path: true
+    path: "${csm.platform.gateway.swagger-ui.path:/swagger-ui.html}"
+    use-root-path: "${csm.platform.gateway.swagger-ui.use-root-path:true}"
     # Reuses the OAuth authorization across aggregated services and page reloads.
-    persist-authorization: true
+    persist-authorization: "${csm.platform.gateway.swagger-ui.persist-authorization:true}"
     # One entry per aggregated service. "url" is the gateway path, not the downstream
     # service's own address (which stays defined in the gateway routes only).
-    urls-primary-name: cosmotech-gateway
+    urls-primary-name: "${csm.platform.gateway.swagger-ui.urls-primary-name:cosmotech-gateway}"
     urls:
       - name: cosmotech-gateway
         url: /v3/api-docs
@@ -78,9 +85,9 @@ springdoc:
       # Swagger UI runs in the browser and must use a public Keycloak client without
       # a client secret. PKCE secures the authorization-code exchange.
       client-id: "${csm.platform.gateway.identityProvider.identity.clientId}"
-      scopes: "openid,email,profile"
-      use-basic-authentication-with-access-code-grant: false
-      use-pkce-with-authorization-code-grant: true
+      scopes: "${csm.platform.gateway.swagger-ui.oauth.scopes:openid,email,profile}"
+      use-basic-authentication-with-access-code-grant: "${csm.platform.gateway.swagger-ui.oauth.use-basic-authentication-with-access-code-grant:false}"
+      use-pkce-with-authorization-code-grant: "${csm.platform.gateway.swagger-ui.oauth.use-pkce-with-authorization-code-grant:true}"
 
 ---
 # Any profile other than 'dev' (prod, docker, ...) switches to JSON console logs,

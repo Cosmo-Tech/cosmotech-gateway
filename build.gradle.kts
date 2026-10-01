@@ -61,6 +61,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
+  implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:$springdocOpenApiVersion")
   implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
