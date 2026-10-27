@@ -18,7 +18,7 @@ plugins {
   kotlin("plugin.spring") version kotlinVersion
   id("dev.detekt") version "2.0.0-alpha.6"
   id("com.google.cloud.tools.jib") version "3.5.4" apply true
-  id("com.diffplug.spotless") version "8.9.0" apply true
+  id("com.diffplug.spotless") version "8.10.4" apply true
 }
 
 group = "com.cosmotech"
