@@ -21,8 +21,8 @@ import reactor.core.publisher.Mono
  * duration), readable both by humans and by log aggregation tools.
  *
  * Ordered first so it wraps the whole chain, including requests blocked/redirected by Spring
- * Security before routing (e.g. a login redirect) and requests handled by regular controllers,
- * not only ones matched by a Gateway route. The authenticated user is filled in by
+ * Security before routing (e.g. a login redirect) and requests handled by regular controllers, not
+ * only ones matched by a Gateway route. The authenticated user is filled in by
  * [SecurityUserCaptureWebFilter], which runs right after Security and tags the exchange.
  */
 @Component
@@ -40,11 +40,7 @@ class AccessLogGlobalFilter : WebFilter {
 
   // MDC entries are populated and cleared synchronously around the log call so they are
   // captured as top-level JSON fields when structured logging is enabled (logging.structured.*).
-  private fun logAccess(
-      exchange: ServerWebExchange,
-      request: ServerHttpRequest,
-      startTime: Long,
-  ) {
+  private fun logAccess(exchange: ServerWebExchange, request: ServerHttpRequest, startTime: Long) {
     val durationMs = System.currentTimeMillis() - startTime
     val route = exchange.getAttribute<Route>(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR)
     val user = exchange.attributes["accessLogUser"] as? String ?: "anonymous"
@@ -87,13 +83,12 @@ class AccessLogGlobalFilter : WebFilter {
 @Component
 class SecurityUserCaptureWebFilter : WebFilter {
 
-  override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
-    return ReactiveSecurityContextHolder.getContext()
-        .map { it.authentication?.name ?: "anonymous" }
-        .defaultIfEmpty("anonymous")
-        .flatMap { user ->
-          exchange.attributes["accessLogUser"] = user
-          chain.filter(exchange)
-        }
-  }
+  override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> =
+      ReactiveSecurityContextHolder.getContext()
+          .map { it.authentication?.name ?: "anonymous" }
+          .defaultIfEmpty("anonymous")
+          .flatMap { user ->
+            exchange.attributes["accessLogUser"] = user
+            chain.filter(exchange)
+          }
 }
