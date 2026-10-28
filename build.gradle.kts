@@ -16,6 +16,7 @@ plugins {
   id("io.spring.dependency-management") version "1.1.7"
   kotlin("jvm") version kotlinVersion
   kotlin("plugin.spring") version kotlinVersion
+  id("project-report")
   id("dev.detekt") version "2.0.0-alpha.6"
   id("com.google.cloud.tools.jib") version "3.5.4" apply true
   id("com.diffplug.spotless") version "8.10.4" apply true
@@ -32,6 +33,8 @@ val kotlinVersion = "2.4"
 // Checks
 val detektVersion = "2.0.0-alpha.6"
 val detektKotlinVersion = "2.4.10"
+val jacksonBom = "3.2.4"
+val bcpkixVersion = "1.86"
 
 // Dependencies
 val springdocOpenApiVersion = "3.2.0"
@@ -56,6 +59,7 @@ dependencies {
   detekt("dev.detekt:detekt-rules-ktlint-wrapper:$detektVersion")
   detektPlugins("dev.detekt:detekt-rules-libraries:$detektVersion")
   implementation(kotlin("reflect"))
+  implementation(platform("tools.jackson:jackson-bom:$jacksonBom"))
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -63,7 +67,11 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:$springdocOpenApiVersion")
-  implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
+  implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux") {
+    constraints {
+      implementation("org.bouncycastle:bcpkix-jdk18on:$bcpkixVersion")
+    }
+  }
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
@@ -113,6 +121,8 @@ configure<SpotlessExtension> {
     //      licenseHeader(licenseHeaderComment, "import")
   }
 }
+
+tasks.withType<HtmlDependencyReportTask>()
 
 tasks.withType<Detekt>().configureEach {
   buildUponDefaultConfig = true // preconfigure defaults
