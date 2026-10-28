@@ -1,9 +1,11 @@
 // Copyright (c) Cosmo Tech.
 // Licensed under the MIT license.
-package com.cosmotech.gateway.config
+package com.cosmotech.gateway.config.telemetry
 
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
+import com.cosmotech.gateway.constants.ACCESS_LOG_USER
+import com.cosmotech.gateway.constants.USER_ANONYMOUS
 import io.micrometer.common.KeyValue
 import io.micrometer.common.KeyValues
 import io.micrometer.core.instrument.MeterRegistry
@@ -70,7 +72,10 @@ class GatewayServerRequestObservationConvention : DefaultServerRequestObservatio
     val request = context.carrier
     return super.getHighCardinalityKeyValues(context)
         .and(
-            KeyValue.of(ENDUSER_ID, context.attributes[ACCESS_LOG_USER] as? String ?: "anonymous"),
+            KeyValue.of(
+                ENDUSER_ID,
+                context.attributes[ACCESS_LOG_USER] as? String ?: USER_ANONYMOUS,
+            ),
             KeyValue.of(URL_QUERY, request?.uri?.query ?: ""),
             KeyValue.of(CLIENT_ADDRESS, request?.remoteAddress?.address?.hostAddress ?: ""),
             KeyValue.of(USER_AGENT, request?.headers?.getFirst("User-Agent") ?: ""),
@@ -81,9 +86,6 @@ class GatewayServerRequestObservationConvention : DefaultServerRequestObservatio
       (context.attributes[ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR] as? Route)?.id ?: "none"
 
   companion object {
-    /** Exchange attribute filled in by `SecurityUserCaptureWebFilter`. */
-    const val ACCESS_LOG_USER = "accessLogUser"
-
     private const val ROUTE_ID = "gateway.route.id"
     private const val ENDUSER_ID = "enduser.id"
     private const val URL_QUERY = "url.query"

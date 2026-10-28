@@ -1,8 +1,10 @@
 // Copyright (c) Cosmo Tech.
 // Licensed under the MIT license.
-package com.cosmotech.gateway.filters
+package com.cosmotech.gateway.filters.telemetry
 
-import com.cosmotech.gateway.config.GatewayServerRequestObservationConvention.Companion.ACCESS_LOG_USER
+import com.cosmotech.gateway.config.CsmGatewayProperties
+import com.cosmotech.gateway.constants.ACCESS_LOG_USER
+import com.cosmotech.gateway.constants.USER_ANONYMOUS
 import io.micrometer.observation.Observation
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor
 import io.micrometer.tracing.handler.TracingObservationHandler
@@ -13,7 +15,11 @@ import org.springframework.cloud.gateway.support.ServerWebExchangeUtils
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.server.reactive.ServerHttpRequest
+import org.springframework.security.authentication.AnonymousAuthenticationToken
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
@@ -58,7 +64,7 @@ class AccessLogGlobalFilter : WebFilter {
 
     MDC.put("method", method)
     MDC.put("path", path)
-    MDC.put("query", request.uri.query ?: "")
+    MDC.put("query", request.uri.query)
     MDC.put("routeId", routeId)
     MDC.put("user", user)
     MDC.put("remoteAddr", remoteAddr)
@@ -111,10 +117,9 @@ class TracingContextCaptureWebFilter : WebFilter {
 
   override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> =
       Mono.deferContextual { contextView ->
-        val observation =
-            contextView.getOrEmpty<Observation>(ObservationThreadLocalAccessor.KEY).orElse(null)
+        val observation = contextView.getOrEmpty<Observation>(ObservationThreadLocalAccessor.KEY)
         val tracingContext: TracingObservationHandler.TracingContext? =
-            observation?.context?.get(TracingObservationHandler.TracingContext::class.java)
+            observation.get().context.get(TracingObservationHandler.TracingContext::class.java)
         tracingContext?.span?.context()?.let {
           exchange.attributes[AccessLogGlobalFilter.TRACE_ID] = it.traceId()
           exchange.attributes[AccessLogGlobalFilter.SPAN_ID] = it.spanId()
@@ -129,14 +134,34 @@ class TracingContextCaptureWebFilter : WebFilter {
  * once the request completes. Runs with the default (lowest precedence) order, i.e. after Security.
  */
 @Component
-class SecurityUserCaptureWebFilter : WebFilter {
+class SecurityUserCaptureWebFilter(private val properties: CsmGatewayProperties) : WebFilter {
 
   override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> =
       ReactiveSecurityContextHolder.getContext()
-          .map { it.authentication?.name ?: "anonymous" }
-          .defaultIfEmpty("anonymous")
+          .map { resolveUser(it.authentication) }
+          .defaultIfEmpty(USER_ANONYMOUS)
           .flatMap { user ->
             exchange.attributes[ACCESS_LOG_USER] = user
             chain.filter(exchange)
           }
+
+  private fun resolveUser(authentication: Authentication?): String {
+    if (
+        authentication == null ||
+            !authentication.isAuthenticated ||
+            authentication is AnonymousAuthenticationToken
+    ) {
+      return USER_ANONYMOUS
+    }
+
+    return when (authentication) {
+      is JwtAuthenticationToken ->
+          authentication.token.getClaimAsString(properties.gateway.authorization.principal)
+
+      else ->
+          (authentication.principal as OAuth2AuthenticatedPrincipal).getAttribute(
+              properties.gateway.authorization.principal,
+          )
+    }?.takeIf { it.isNotBlank() } ?: USER_ANONYMOUS
+  }
 }

@@ -37,11 +37,11 @@ val kotlinVersion = "2.4"
 // Checks
 val detektVersion = "2.0.0-alpha.6"
 val detektKotlinVersion = "2.4.10"
-val jacksonBom = "3.2.4"
 val bcpkixVersion = "1.86"
 
 // Dependencies
 val springdocOpenApiVersion = "3.2.0"
+val jacksonBom = "3.2.4"
 // Not managed by the Spring Boot BOM; must stay aligned with the OpenTelemetry SDK it manages
 val openTelemetryInstrumentationVersion = "2.28.0-alpha"
 

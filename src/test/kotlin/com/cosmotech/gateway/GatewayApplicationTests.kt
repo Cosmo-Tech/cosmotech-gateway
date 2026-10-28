@@ -3,8 +3,8 @@
 package com.cosmotech.gateway
 
 import com.cosmotech.gateway.config.CsmGatewayProperties
-import com.cosmotech.gateway.config.OpenApiConfig
-import com.cosmotech.gateway.config.OpenApiDocumentNormalizer
+import com.cosmotech.gateway.config.openapi.OpenApiConfig
+import com.cosmotech.gateway.config.openapi.OpenApiDocumentNormalizer
 import io.swagger.v3.oas.models.security.SecurityScheme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
