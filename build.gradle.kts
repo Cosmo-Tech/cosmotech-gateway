@@ -34,7 +34,7 @@ val detektVersion = "2.0.0-alpha.6"
 val detektKotlinVersion = "2.4.10"
 
 // Dependencies
-val springdocOpenApiVersion = "3.1.1"
+val springdocOpenApiVersion = "3.2.0"
 
 repositories {
   mavenCentral()
