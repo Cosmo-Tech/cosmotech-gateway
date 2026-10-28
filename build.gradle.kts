@@ -82,7 +82,7 @@ extra["springCloudVersion"] = "2025.1.2"
 dependencyManagement {
   imports {
     mavenBom(
-        "org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}"
+        "org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}",
     )
   }
 }
@@ -132,21 +132,21 @@ tasks.withType<Detekt>().configureEach {
       // observe findings in your browser with structure and code snippets
       required.set(true)
       outputLocation.set(
-          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.html")
+          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.html"),
       )
     }
     checkstyle {
       // checkstyle like format mainly for integrations like Jenkins
       required.set(false)
       outputLocation.set(
-          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.xml")
+          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.xml"),
       )
     }
     markdown {
       // similar to the console output, contains issue signature to manually edit baseline files
       required.set(true)
       outputLocation.set(
-          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.txt")
+          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.txt"),
       )
     }
     sarif {
@@ -154,7 +154,7 @@ tasks.withType<Detekt>().configureEach {
       // with Github Code Scanning
       required.set(true)
       outputLocation.set(
-          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.sarif")
+          file("${layout.buildDirectory.get()}/reports/detekt/${project.name}-detekt.sarif"),
       )
     }
   }
@@ -182,13 +182,13 @@ configure<JibExtension> {
     environment =
         mapOf(
             "JAVA_TOOL_OPTIONS" to
-                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005"
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005",
         )
     jvmFlags =
         listOf(
             // Make sure Spring DevTools is disabled in production as running it is a
             // security risk
-            "-Dspring.devtools.restart.enabled=false"
+            "-Dspring.devtools.restart.enabled=false",
         )
     ports = listOf("5005", "8060")
     // Docker Best Practice : run as non-root.
