@@ -23,6 +23,7 @@ plugins {
   id("com.google.cloud.tools.jib") version "3.5.4" apply true
   id("com.diffplug.spotless") version "8.10.4" apply true
   id("org.cyclonedx.bom") version "3.5.1" apply true
+  id("org.sonarqube") version "7.5.0.8588"
 }
 
 group = "com.cosmotech"
@@ -103,6 +104,22 @@ tasks.cyclonedxBom {
   projectType = APPLICATION
   jsonOutput.set(file("build/reports/cosmotech-gateway-bom.json"))
   xmlOutput.set(file("build/reports/cosmotech-gateway-bom.xml"))
+}
+
+// Run an analysis
+// ./gradlew sonar -Dsonar.token=yourAuthenticationToken
+sonar {
+  properties {
+    var sonarProjectKey =
+        project.findProperty("sonar.projectKey")?.toString() ?: System.getenv("SONAR_PROJECT_KEY")
+    var sonarHostUrl =
+        project.findProperty("sonar.host.url")?.toString() ?: System.getenv("SONAR_HOST_URL")
+    var sonarProjectName =
+        project.findProperty("sonar.projectName")?.toString() ?: System.getenv("SONAR_PROJECT_NAME")
+    property("sonar.projectKey", sonarProjectKey)
+    property("sonar.host.url", sonarHostUrl)
+    property("sonar.projectName", sonarProjectName)
+  }
 }
 
 configure<SpotlessExtension> {
