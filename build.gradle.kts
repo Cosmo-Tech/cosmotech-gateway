@@ -5,6 +5,8 @@ import com.google.cloud.tools.jib.api.buildplan.ImageFormat.OCI
 import com.google.cloud.tools.jib.gradle.JibExtension
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.FailOnSeverity
+import org.cyclonedx.gradle.CyclonedxDirectTask
+import org.cyclonedx.model.Component.Type.APPLICATION
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.springframework.boot.gradle.tasks.bundling.BootJar
@@ -20,6 +22,7 @@ plugins {
   id("dev.detekt") version "2.0.0-alpha.6"
   id("com.google.cloud.tools.jib") version "3.5.4" apply true
   id("com.diffplug.spotless") version "8.10.4" apply true
+  id("org.cyclonedx.bom") version "3.5.1" apply true
 }
 
 group = "com.cosmotech"
@@ -93,6 +96,13 @@ dependencyManagement {
         "org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}",
     )
   }
+}
+
+tasks.cyclonedxBom {
+  componentName = "cosmotech-gateway"
+  projectType = APPLICATION
+  jsonOutput.set(file("build/reports/cosmotech-gateway-bom.json"))
+  xmlOutput.set(file("build/reports/cosmotech-gateway-bom.xml"))
 }
 
 configure<SpotlessExtension> {
@@ -171,6 +181,10 @@ tasks.withType<Detekt>().configureEach {
 
   tasks.getByName<BootJar>("bootJar") { enabled = false }
   tasks.getByName<Jar>("jar") { enabled = true }
+}
+
+project.tasks.withType<CyclonedxDirectTask> {
+  shouldRunAfter(tasks.getByName("detekt"))
 }
 
 configure<JibExtension> {
