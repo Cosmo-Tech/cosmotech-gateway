@@ -115,8 +115,8 @@ jobs:
             ./gradlew
             jibDockerBuild
             -Djib.to.image=com.cosmotech/cosmotech-gateway:${{ github.sha }}
-            -Pbaseimage.repository.user="${{ secrets.BASEIMAGE_REPOSITORY_USER }}"
-            -Pbaseimage.repository.password="${{ secrets.BASEIMAGE_REPOSITORY_PASSWORD }}"
+            -Pbaseimage.repository.user='${{ secrets.HARBOR_ROBOT_ACCOUNT_NAME }}'
+            -Pbaseimage.repository.password='${{ secrets.HARBOR_ROBOT_ACCOUNT_SECRET }}'
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.36.0
@@ -178,3 +178,18 @@ jobs:
           docker image tag com.cosmotech/cosmotech-gateway:${{github.sha}} \
             ghcr.io/cosmo-tech/cosmotech-gateway:latest
           docker image push ghcr.io/cosmo-tech/cosmotech-gateway:latest
+
+      - name: Login to Cosmotech Container Registry
+        uses: docker/login-action@v4.7.0
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          registry: registry.cosmotech.com
+          username: ${{ secrets.HARBOR_ROBOT_ACCOUNT_NAME }}
+          password: ${{ secrets.HARBOR_ROBOT_ACCOUNT_SECRET }}
+
+      - name: Push API Container Image (tag) to Cosmotech Container Registry
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker image tag com.cosmotech/cosmotech-gateway:${{github.sha}} \
+            registry.cosmotech.com/product/cosmotech-gateway:${{ steps.refvar.outputs.gitRefName }}
+          docker image push registry.cosmotech.com/product/cosmotech-gateway:${{ steps.refvar.outputs.gitRefName }}
