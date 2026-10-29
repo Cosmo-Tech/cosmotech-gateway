@@ -27,8 +27,8 @@ jobs:
       - name: Upload CycloneDX BOM
         uses: actions/upload-artifact@v7
         with:
-          name: cosmotech-api-bom
-          path: build/reports/cosmotech-api-bom.xml
+          name: cosmotech-gateway-bom
+          path: build/reports/cosmotech-gateway-bom.xml
           overwrite: true
       - name: Upload cyclonedx bom to dependency
         uses: DependencyTrack/gh-upload-sbom@v4
