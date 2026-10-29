@@ -91,6 +91,10 @@ configurations
 
 extra["springCloudVersion"] = "2025.1.2"
 
+dependencyLocking {
+  lockAllConfigurations()
+}
+
 dependencyManagement {
   imports {
     mavenBom(
