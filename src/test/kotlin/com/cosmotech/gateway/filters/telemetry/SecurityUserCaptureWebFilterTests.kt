@@ -8,10 +8,15 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest
 import org.springframework.mock.web.server.MockServerWebExchange
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 import org.springframework.security.web.server.WebFilterChainProxy
+import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebHandler
 import org.springframework.web.server.adapter.WebHttpHandlerBuilder
 import reactor.core.publisher.Mono
@@ -44,10 +49,18 @@ class SecurityUserCaptureWebFilterTests {
     assertEquals("anonymous", capturedUser(null))
   }
 
+  @Test
+  fun `principal that is neither a JWT nor an OAuth2 principal is stored as anonymous`() {
+    val authentication =
+        UsernamePasswordAuthenticationToken.authenticated("alice", null, listOf<GrantedAuthority>())
+    assertEquals("anonymous", capturedUser(null, authentication = authentication))
+  }
+
   private fun capturedUser(
       claims: Map<String, Any>?,
       authorization: CsmGatewayProperties.Gateway.CsmAuthorization =
           CsmGatewayProperties.Gateway.CsmAuthorization(),
+      authentication: Authentication? = null,
   ): String? {
     val properties =
         CsmGatewayProperties(
@@ -74,6 +87,19 @@ class SecurityUserCaptureWebFilterTests {
             .authorizeExchange { it.anyExchange().permitAll() }
             .oauth2ResourceServer { it.jwt { jwt -> jwt.jwtDecoder(decoder) } }
             .build()
+    // Injects an authentication inside the security chain, so it is seen by the capture filter
+    val filters =
+        listOfNotNull(
+            WebFilterChainProxy(security),
+            authentication?.let { auth ->
+              WebFilter { exchange, chain ->
+                chain
+                    .filter(exchange)
+                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth))
+              }
+            },
+            SecurityUserCaptureWebFilter(properties),
+        )
     var user: String? = null
     val handler =
         WebHttpHandlerBuilder.webHandler(
@@ -82,7 +108,7 @@ class SecurityUserCaptureWebFilterTests {
                   Mono.empty()
                 },
             )
-            .filter(WebFilterChainProxy(security), SecurityUserCaptureWebFilter(properties))
+            .filter(*filters.toTypedArray())
             .build()
     val request = MockServerHttpRequest.get("/api/items")
     if (claims != null) request.header("Authorization", "Bearer test-token")
