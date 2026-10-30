@@ -1,0 +1,37 @@
+# Development-time services, started automatically by `./gradlew bootRun`
+# (spring-boot-docker-compose) and stopped when the application exits.
+services:
+  jaeger:
+    image: "jaegertracing/jaeger:2.11.0"
+    command: ["--config", "/etc/jaeger/config.yaml"]
+    volumes:
+      - "./docker/jaeger/config-spm.yaml:/etc/jaeger/config.yaml:ro"
+    environment:
+      # How often span metrics are flushed to the Prometheus scrape endpoint
+      SPANMETRICS_FLUSH_INTERVAL: "15s"
+    networks:
+      default:
+        # Host name expected by the Prometheus scrape configuration
+        aliases: ["spm_metrics_source"]
+    ports:
+      # Fixed (not ephemeral) so other locally-run services, e.g. cosmotech-api, can also
+      # export to this same Jaeger via OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318.
+      # The gateway itself still uses Spring Boot's docker-compose service-connection
+      # auto-discovery, so this fixed mapping doesn't affect it.
+      - "4317:4317"
+      - "4318:4318"
+      # Jaeger UI: http://localhost:16686
+      - "16686:16686"
+    labels:
+      # Jaeger is not a natively supported image name, so declare the service connection it provides
+      org.springframework.boot.service-connection: "otel/opentelemetry-collector-contrib"
+
+  # Stores the RED metrics that back the "Monitor" tab of the Jaeger UI
+  prometheus:
+    image: "prom/prometheus:v3.12.0"
+    volumes:
+      - "./docker/jaeger/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+    ports:
+      - "9090:9090"
+    labels:
+      org.springframework.boot.ignore: "true"

@@ -1,38 +1,79 @@
+csm:
+  platform:
+    gateway:
+      contextPath: /
+      authorization:
+        principal: email
+        cookie-name: SESSION
+      cors:
+        allowed-origins:
+          - "http://localhost:3000"
+          - "http://localhost:8060"
+          - "http://localhost:8080"
+        allowed-methods: [GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS]
+        allowed-headers: ["*"]
+        exposed-headers: [Location, WWW-Authenticate]
+        allow-credentials: true
+        max-age: 3600
+      identityProvider:
+        identity:
+          clientId: "idp-gateway-client"
+          tenantId: "changeme"
+        serverBaseUrl: "http://localhost:8080"
+      openApiAggregation:
+        enabled: true
+        serverUrls:
+          '[/openapi/cosmotech-run-api-openapi-service]': /run-api
+      port: 8060
+management:
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: readinessState
+      probes:
+        enabled: true
+      show-details: always
 spring:
+  application:
+    name: cosmotech-gateway
   cloud:
     gateway:
       server:
         webflux:
           defaultFilters:
             - TokenRelay=
+          failOnRouteDefinitionError: true
+          routeFilterCacheEnabled: false
           routes:
-            # Exposes the OpenAPI description of "test-service" behind the gateway, so it
-            # can be aggregated by springdoc.swagger-ui.urls below.
-            - id: test-service
-              uri: http://localhost:8040
+            - filters:
+                - RewritePath=/run-api/(?<segment>.*), /$\{segment}
+              id: cosmotech-api
               predicates:
-                - Path=/openapi/test-service
-              filters:
-                - RewritePath=/openapi/test-service, /v3/api-docs
-
-# Aggregated OpenAPI documentation for all services routed through the gateway.
-# See docs/openapi-aggregation.md for the full list of available configuration keys.
+                - Path=/run-api/**
+              uri: http://localhost:8080
+            - filters:
+                - RewritePath=/openapi/cosmotech-run-api-openapi-service, /openapi.yaml
+              id: cosmotech-api-openapi
+              predicates:
+                - Path=/openapi/cosmotech-run-api-openapi-service
+              uri: http://localhost:8080
+          trustedProxies: ""
+  output:
+    ansi:
+      enabled: never
 springdoc:
   swagger-ui:
-    urls-primary-name: cosmotech-gateway
+    oauth:
+      scopes: openid,email,profile
+      useBasicAuthenticationWithAccessCodeGrant: false
+      usePkceWithAuthorizationCodeGrant: true
+    path: /swagger-ui.html
+    persistAuthorization: true
     urls:
       - name: cosmotech-gateway
         url: /v3/api-docs
-      - name: test-service
-        url: /openapi/test-service
-
-csm:
-  platform:
-    gateway:
-      contextPath: "/"
-      port: 8060
-      identityProvider:
-        serverBaseUrl: "http://localhost:8080"
-        identity:
-          clientId: "idp-gateway-client"
-          tenantId: "changeme"
+      - name: cosmotech-api
+        url: /openapi/cosmotech-run-api-openapi-service
+    urlsPrimaryName: cosmotech-gateway
+    useRootPath: true

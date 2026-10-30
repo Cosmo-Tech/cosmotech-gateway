@@ -37,11 +37,13 @@ val kotlinVersion = "2.4"
 // Checks
 val detektVersion = "2.0.0-alpha.6"
 val detektKotlinVersion = "2.4.10"
-val jacksonBom = "3.2.4"
 val bcpkixVersion = "1.86"
 
 // Dependencies
 val springdocOpenApiVersion = "3.2.0"
+val jacksonBom = "3.2.4"
+// Not managed by the Spring Boot BOM; must stay aligned with the OpenTelemetry SDK it manages
+val openTelemetryInstrumentationVersion = "2.28.0-alpha"
 
 repositories {
   mavenCentral()
@@ -76,6 +78,17 @@ dependencies {
       implementation("org.bouncycastle:bcpkix-jdk18on:$bcpkixVersion")
     }
   }
+  // Observability: OpenTelemetry traces/metrics/logs through Micrometer
+  implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
+  implementation("io.micrometer:micrometer-registry-otlp")
+  implementation("io.micrometer:micrometer-registry-prometheus")
+  implementation(
+      "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$openTelemetryInstrumentationVersion",
+  )
+
+  // Starts compose.yaml (Jaeger) on bootRun and wires the OTLP endpoint automatically
+  developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.security:spring-security-test")
 }
