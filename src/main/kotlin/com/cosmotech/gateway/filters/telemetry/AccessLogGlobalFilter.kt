@@ -53,7 +53,7 @@ class AccessLogGlobalFilter : WebFilter {
   private fun logAccess(exchange: ServerWebExchange, request: ServerHttpRequest, startTime: Long) {
     val durationMs = System.currentTimeMillis() - startTime
     val route = exchange.getAttribute<Route>(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR)
-    val user = exchange.attributes[ACCESS_LOG_USER] as? String ?: "anonymous"
+    val user = exchange.attributes[ACCESS_LOG_USER] as? String ?: USER_ANONYMOUS
     val remoteAddr = request.remoteAddress?.address?.hostAddress ?: "-"
     val status = exchange.response.statusCode?.value() ?: 0
     val method = request.method.name()
@@ -159,7 +159,7 @@ class SecurityUserCaptureWebFilter(private val properties: CsmGatewayProperties)
           authentication.token.getClaimAsString(properties.gateway.authorization.principal)
 
       else ->
-          (authentication.principal as OAuth2AuthenticatedPrincipal).getAttribute(
+          (authentication.principal as? OAuth2AuthenticatedPrincipal)?.getAttribute(
               properties.gateway.authorization.principal,
           )
     }?.takeIf { it.isNotBlank() } ?: USER_ANONYMOUS
