@@ -97,7 +97,7 @@ To start the application locally:
 | `csm.platform.gateway.identityProvider.identity.clientId` | Public Keycloak client shared by the gateway and Swagger UI | `idp-gateway-client` |
 | `csm.platform.gateway.authorization.principal` | Token claim used as the user principal name | `email` (default `preferred_username`) |
 | `csm.platform.gateway.authorization.cookie-name` | Session cookie name, also applied to `server.reactive.session.cookie.name` | `SESSION` (default) |
-| `csm.platform.gateway.cors.allowed-origins` | Origins allowed to make credentialed cross-origin requests (no wildcard) | `http://localhost:3000`, `http://localhost:8060`, `http://localhost:8080`, `http://localhost:8484` (default list) |
+| `csm.platform.gateway.cors.allowed-origins` | Origins allowed to make credentialed cross-origin requests (no wildcard) | `http://localhost:3000`, `http://localhost:8060`, `http://localhost:8080` (default list) |
 | `csm.platform.gateway.cors.allowed-methods` | HTTP methods allowed cross-origin | `GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS` (default) |
 | `csm.platform.gateway.cors.allowed-headers` | Request headers allowed cross-origin | `*` (default) |
 | `csm.platform.gateway.cors.exposed-headers` | Response headers readable by the browser | `Location, WWW-Authenticate` (default) |
@@ -130,6 +130,16 @@ allow the authorization-code flow with PKCE S256, and accept these redirect URIs
 
 - `http://localhost:8060/swagger-ui/oauth2-redirect.html` for Swagger UI;
 - `http://localhost:8060/login/oauth2/code/keycloak-client` for Spring Security.
+
+## Telemetry
+
+The gateway writes one structured access log line per request (method, path, route, user, status, duration, trace
+ids) and exports traces and metrics through Micrometer and OpenTelemetry. Metrics and logs are only exported when
+`OTEL_EXPORT_ENABLED=true` is set; traces are exported by the `dev` profile. `OTEL_EXPORTER_OTLP_ENDPOINT` sets the
+target. `./gradlew bootRun` starts a local
+Jaeger (UI on <http://localhost:16686>) and Prometheus (<http://localhost:9090>). See
+[docs/telemetry.md](docs/telemetry.md) for the log format, the trace and metric attributes, the configuration keys and
+the local stack.
 
 ## OpenAPI aggregation
 

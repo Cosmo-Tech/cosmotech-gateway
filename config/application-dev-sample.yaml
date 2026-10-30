@@ -4,6 +4,17 @@ csm:
       contextPath: /
       authorization:
         principal: email
+        cookie-name: SESSION
+      cors:
+        allowed-origins:
+          - "http://localhost:3000"
+          - "http://localhost:8060"
+          - "http://localhost:8080"
+        allowed-methods: [GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS]
+        allowed-headers: ["*"]
+        exposed-headers: [Location, WWW-Authenticate]
+        allow-credentials: true
+        max-age: 3600
       identityProvider:
         identity:
           clientId: "idp-gateway-client"
