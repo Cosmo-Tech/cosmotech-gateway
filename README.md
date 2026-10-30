@@ -95,6 +95,34 @@ To start the application locally:
 | `csm.platform.gateway.identityProvider.serverBaseUrl` | Keycloak base URL, without a trailing slash | `http://localhost:8080` |
 | `csm.platform.gateway.identityProvider.identity.tenantId` | Keycloak realm | `changeme` |
 | `csm.platform.gateway.identityProvider.identity.clientId` | Public Keycloak client shared by the gateway and Swagger UI | `idp-gateway-client` |
+| `csm.platform.gateway.authorization.principal` | Token claim used as the user principal name | `email` (default `preferred_username`) |
+| `csm.platform.gateway.authorization.cookie-name` | Session cookie name, also applied to `server.reactive.session.cookie.name` | `SESSION` (default) |
+| `csm.platform.gateway.cors.allowed-origins` | Origins allowed to make credentialed cross-origin requests (no wildcard) | `http://localhost:3000`, `http://localhost:8060`, `http://localhost:8080`, `http://localhost:8484` (default list) |
+| `csm.platform.gateway.cors.allowed-methods` | HTTP methods allowed cross-origin | `GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS` (default) |
+| `csm.platform.gateway.cors.allowed-headers` | Request headers allowed cross-origin | `*` (default) |
+| `csm.platform.gateway.cors.exposed-headers` | Response headers readable by the browser | `Location, WWW-Authenticate` (default) |
+| `csm.platform.gateway.cors.allow-credentials` | Allow cookies and `Authorization` cross-origin | `true` (default) |
+| `csm.platform.gateway.cors.max-age` | Preflight response cache duration, in seconds | `3600` (default) |
+
+The default values of the `csm.platform.gateway.cors.*` and `csm.platform.gateway.authorization.cookie-name`
+keys are set in [application.yaml](src/main/resources/application.yaml) and in the `CsmGatewayProperties` class:
+keep both in sync when changing them.
+
+## Security
+
+- **API clients** (`Accept` not `text/html`, including `*/*`) that call a protected endpoint without a valid
+  token get `401 Unauthorized` with `WWW-Authenticate: Bearer`.
+- **Browsers** (`Accept: text/html`) are redirected to the Keycloak login page.
+- **Authentication** uses OAuth2 Bearer tokens (JWT) validated against the Keycloak JWK set. No API key is
+  accepted on the MCP endpoints.
+- **CSRF protection** applies only to unsafe methods (POST, PUT, PATCH, DELETE) authenticated by the session
+  cookie. Requests carrying an `Authorization: Bearer` header are exempt: browsers never attach that header
+  automatically, so they cannot be forged cross-site.
+- **Public endpoints** (anonymous `GET`): `/about`, `/actuator/prometheus`, `/actuator/health/**`,
+  `/actuator/info`, the Swagger UI, the OpenAPI documents (`/v3/api-docs`, `/openapi/**`), and the protected
+  resource metadata `/*/.well-known/oauth-protected-resource/**` that MCP clients use to discover the
+  authorization server. `OPTIONS` requests are always allowed for CORS preflight.
+- **CORS** allows only the origins listed in `csm.platform.gateway.cors.allowed-origins`, with credentials.
 
 The main [application.yaml](src/main/resources/application.yaml) derives Spring Security's issuer, JWK,
 authorization and token endpoints from these identity-provider values. The shared client must be public,
