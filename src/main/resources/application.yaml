@@ -158,9 +158,9 @@ springdoc:
       use-pkce-with-authorization-code-grant: "${csm.platform.gateway.swagger-ui.oauth.use-pkce-with-authorization-code-grant:true}"
 
 ---
-# In dev, compose.yaml starts a Jaeger container and Spring Boot injects its OTLP endpoint,
-# so span export can be turned on out of the box. Jaeger only ingests traces: metrics and
-# logs stay local (actuator/console).
+# In dev, compose.yaml starts an OpenTelemetry Collector and Spring Boot injects its OTLP
+# endpoint, so span export is turned on out of the box. Metrics and logs are only exported
+# with OTEL_EXPORT_ENABLED=true.
 spring:
   config:
     activate:

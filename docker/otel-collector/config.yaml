@@ -1,0 +1,53 @@
+# Single OTLP entry point for every locally-run service (gateway, cosmotech-api, ...):
+# traces go to Jaeger, metrics to Prometheus (scraped) and logs to Elasticsearch.
+receivers:
+  otlp:
+    protocols:
+      # Must bind 0.0.0.0 (the collector defaults to localhost) to be reachable from the host
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  batch:
+
+extensions:
+  basicauth/elasticsearch:
+    client_auth:
+      username: "elastic"
+      password: "${env:ELASTIC_PASSWORD}"
+
+exporters:
+  otlp/jaeger:
+    endpoint: "jaeger:4317"
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    # Keeps resource attributes (service.name, deployment.environment.name...) as metric labels
+    resource_to_telemetry_conversion:
+      enabled: true
+  elasticsearch:
+    endpoints: ["http://elasticsearch:9200"]
+    auth:
+      authenticator: basicauth/elasticsearch
+    mapping:
+      # Stores logs in the "logs-generic.otel-default" data stream, keeping OTel semantics
+      mode: otel
+
+service:
+  extensions: [basicauth/elasticsearch]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch]

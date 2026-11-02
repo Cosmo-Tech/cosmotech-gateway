@@ -116,12 +116,12 @@ class OpenTelemetryLogbackAppenderInitializer(private val openTelemetry: OpenTel
           setCaptureCodeAttributes(true)
           setCaptureMarkerAttribute(true)
           setCaptureKeyValuePairAttributes(true)
-          setCaptureLoggerContext(true)
           setCaptureMdcAttributes("*")
           start()
         }
-    OpenTelemetryAppender.install(openTelemetry)
     rootLogger.addAppender(appender)
+    // install() only wires appenders already attached to a logger
+    OpenTelemetryAppender.install(openTelemetry)
   }
 
   private companion object {

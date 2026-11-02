@@ -112,17 +112,27 @@ support:
 
 | Service | Address | Purpose |
 | --- | --- | --- |
-| Jaeger | UI: <http://localhost:16686>, OTLP: `4317` (gRPC), `4318` (HTTP) | Trace storage and UI. The **Monitor** tab shows service performance metrics. |
-| Prometheus | <http://localhost:9090> | Scrapes the RED metrics derived from spans by Jaeger's `spanmetrics` connector, and Jaeger's own metrics. |
+| OpenTelemetry Collector | OTLP: `4317` (gRPC), `4318` (HTTP) | Single OTLP entry point. Routes traces to Jaeger, metrics to Prometheus and logs to Elasticsearch. |
+| Jaeger | UI: <http://localhost:16686> | Trace storage and UI. The **Monitor** tab shows service performance metrics. |
+| Prometheus | <http://localhost:9090> | Scrapes the application metrics exposed by the collector, the RED metrics derived from spans by Jaeger's `spanmetrics` connector, and Jaeger's own metrics. |
+| Elasticsearch | <http://localhost:9200> | Log storage (data stream `logs-generic.otel-default`). User `elastic`, password `ELASTIC_PASSWORD` (default `changeme`): local use only. |
+| Kibana | <http://localhost:5601> | Log UI (login `elastic`). In **Discover**, create a data view on `logs-*`. |
 
-The Jaeger configuration is in [`docker/jaeger/config-spm.yaml`](../docker/jaeger/config-spm.yaml). The Prometheus
+The collector configuration is in [`docker/otel-collector/config.yaml`](../docker/otel-collector/config.yaml). The
+Jaeger configuration is in [`docker/jaeger/config-spm.yaml`](../docker/jaeger/config-spm.yaml). The Prometheus
 scrape configuration is in [`docker/jaeger/prometheus.yml`](../docker/jaeger/prometheus.yml).
 
-The fixed OTLP ports also let other services started locally, such as `cosmotech-api`, send their traces to the same
-Jaeger with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`.
+The `dev` profile only exports traces. Start the gateway with `OTEL_EXPORT_ENABLED=true` to also export metrics and
+logs.
+
+The fixed OTLP ports also let other services started locally, such as `cosmotech-api`, send their telemetry to the
+same collector with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`.
 
 The gateway itself discovers the OTLP endpoint through Spring Boot's Docker Compose service connection. The fixed
 port mapping does not change this.
+
+See [observability-stack.md](observability-stack.md) for the architecture, the flow of each signal, and how to use each
+component.
 
 ## Limitations
 
