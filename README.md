@@ -131,6 +131,18 @@ allow the authorization-code flow with PKCE S256, and accept these redirect URIs
 - `http://localhost:8060/swagger-ui/oauth2-redirect.html` for Swagger UI;
 - `http://localhost:8060/login/oauth2/code/keycloak-client` for Spring Security.
 
+## Telemetry
+
+The gateway writes one structured access log line per request (method, path, route, user, status, duration, trace
+ids) and exports traces and metrics through Micrometer and OpenTelemetry. Metrics and logs are only exported when
+`OTEL_EXPORT_ENABLED=true` is set; traces are exported by the `dev` profile. `OTEL_EXPORTER_OTLP_ENDPOINT` sets the
+target. `./gradlew bootRun` starts a local
+OpenTelemetry Collector routing traces to Jaeger (UI on <http://localhost:16686>), metrics to Prometheus
+(<http://localhost:9090>) and logs to Elasticsearch/Kibana (<http://localhost:5601>). See
+[docs/telemetry.md](docs/telemetry.md) for the log format, the trace and metric attributes, the configuration keys and
+the local stack, and [docs/observability-stack.md](docs/observability-stack.md) for the architecture and usage of the
+local observability stack.
+
 ## OpenAPI aggregation
 
 The gateway aggregates the OpenAPI descriptions of the services it routes to and exposes them through
