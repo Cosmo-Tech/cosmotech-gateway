@@ -1,0 +1,111 @@
+# Development-time services, started automatically by `./gradlew bootRun`
+# (spring-boot-docker-compose) and stopped when the application exits.
+services:
+  # Single OTLP entry point: routes traces to Jaeger, metrics to Prometheus, logs to Elasticsearch
+  otel-collector:
+    image: "otel/opentelemetry-collector-contrib:0.139.0"
+    command: ["--config", "/etc/otelcol/config.yaml"]
+    volumes:
+      - "./docker/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro"
+    environment:
+      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD:-changeme}"
+    depends_on:
+      jaeger:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      # Fixed (not ephemeral) so other locally-run services, e.g. cosmotech-api, can also
+      # export here via OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318.
+      # The gateway itself uses Spring Boot's docker-compose service-connection auto-discovery.
+      - "4317:4317"
+      - "4318:4318"
+
+  jaeger:
+    image: "jaegertracing/jaeger:2.11.0"
+    command: ["--config", "/etc/jaeger/config.yaml"]
+    volumes:
+      - "./docker/jaeger/config-spm.yaml:/etc/jaeger/config.yaml:ro"
+    environment:
+      # How often span metrics are flushed to the Prometheus scrape endpoint
+      SPANMETRICS_FLUSH_INTERVAL: "15s"
+    networks:
+      default:
+        # Host name expected by the Prometheus scrape configuration
+        aliases: ["spm_metrics_source"]
+    ports:
+      # Jaeger UI: http://localhost:16686 (OTLP is only reachable through otel-collector)
+      - "16686:16686"
+    labels:
+      org.springframework.boot.ignore: "true"
+
+  # Stores the application metrics (from otel-collector) and the RED metrics that back the
+  # "Monitor" tab of the Jaeger UI
+  prometheus:
+    image: "prom/prometheus:v3.12.0"
+    volumes:
+      - "./docker/jaeger/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+    ports:
+      - "9090:9090"
+    labels:
+      org.springframework.boot.ignore: "true"
+
+  # Log storage. Single node, HTTP without TLS and fixed passwords: local development only.
+  # Security must stay enabled: Kibana's Observability and onboarding pages rely on it.
+  elasticsearch:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:9.2.0"
+    environment:
+      discovery.type: "single-node"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
+      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD:-changeme}"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    labels:
+      org.springframework.boot.ignore: "true"
+
+  # One-shot job: Kibana cannot connect as "elastic", it needs the built-in "kibana_system" user
+  elasticsearch-setup:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:9.2.0"
+    environment:
+      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD:-changeme}"
+      KIBANA_PASSWORD: "${KIBANA_PASSWORD:-changeme}"
+    entrypoint:
+      - "bash"
+      - "-c"
+      - >-
+        curl -sf -u "elastic:$$ELASTIC_PASSWORD" -H "Content-Type: application/json"
+        -X POST http://elasticsearch:9200/_security/user/kibana_system/_password
+        -d "{\"password\":\"$$KIBANA_PASSWORD\"}"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
+    labels:
+      org.springframework.boot.ignore: "true"
+
+  # Logs UI: http://localhost:5601 (login: elastic / ELASTIC_PASSWORD)
+  kibana:
+    image: "docker.elastic.co/kibana/kibana:9.2.0"
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+      ELASTICSEARCH_USERNAME: "kibana_system"
+      ELASTICSEARCH_PASSWORD: "${KIBANA_PASSWORD:-changeme}"
+      # Required by alerting, Fleet and onboarding; any 32+ character value works locally
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: "local-dev-encrypted-saved-objects-key"
+      XPACK_SECURITY_ENCRYPTIONKEY: "local-dev-security-encryption-key-000"
+      XPACK_REPORTING_ENCRYPTIONKEY: "local-dev-reporting-encryption-key-00"
+    depends_on:
+      elasticsearch-setup:
+        condition: service_completed_successfully
+    ports:
+      - "5601:5601"
+    labels:
+      org.springframework.boot.ignore: "true"

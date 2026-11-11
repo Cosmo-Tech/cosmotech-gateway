@@ -1,6 +1,6 @@
 // Copyright (c) Cosmo Tech.
 // Licensed under the MIT license.
-package com.cosmotech.gateway.config
+package com.cosmotech.gateway.config.openapi
 
 import java.nio.charset.StandardCharsets
 import org.springdoc.core.properties.SwaggerUiConfigProperties

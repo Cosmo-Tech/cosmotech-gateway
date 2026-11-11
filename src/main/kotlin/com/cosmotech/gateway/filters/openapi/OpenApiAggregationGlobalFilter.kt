@@ -1,9 +1,9 @@
 // Copyright (c) Cosmo Tech.
 // Licensed under the MIT license.
-package com.cosmotech.gateway.filters
+package com.cosmotech.gateway.filters.openapi
 
 import com.cosmotech.gateway.config.CsmGatewayProperties
-import com.cosmotech.gateway.config.OpenApiDocumentNormalizer
+import com.cosmotech.gateway.config.openapi.OpenApiDocumentNormalizer
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.gateway.filter.GatewayFilterChain

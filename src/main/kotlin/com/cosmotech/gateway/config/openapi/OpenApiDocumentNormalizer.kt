@@ -1,7 +1,8 @@
 // Copyright (c) Cosmo Tech.
 // Licensed under the MIT license.
-package com.cosmotech.gateway.config
+package com.cosmotech.gateway.config.openapi
 
+import com.cosmotech.gateway.config.CsmGatewayProperties
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.security.SecurityScheme
 import org.springframework.beans.factory.annotation.Qualifier
