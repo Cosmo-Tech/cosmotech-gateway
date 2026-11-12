@@ -37,7 +37,7 @@ val kotlinVersion = "2.4"
 // Checks
 val detektVersion = "2.0.0-alpha.6"
 val detektKotlinVersion = "2.4.10"
-val jacksonBom = "3.2.4"
+val jacksonBom = "3.3.0"
 val bcpkixVersion = "1.86"
 
 // Dependencies
