@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'
 
 jobs:
   dependency_track:
@@ -25,15 +27,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew cyclonedxBom
       - name: Upload CycloneDX BOM
+        if: ${{ github.ref_type != 'tag' }}
         uses: actions/upload-artifact@v7
         with:
           name: cosmotech-gateway-bom
           path: build/reports/cosmotech-gateway-bom.xml
           overwrite: true
-      - name: Upload cyclonedx bom to dependency
+      - name: Upload cyclonedx bom to dependency (main)
+        if: ${{ github.ref_type != 'tag' }}
         uses: DependencyTrack/gh-upload-sbom@v4
         with:
-          serverhostname: ${{ secrets.DEPENDENCY_TRACK_SERVER_HOSTNAME }}
-          apikey: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}
+          server-hostname: ${{ secrets.DEPENDENCY_TRACK_SERVER_HOSTNAME }}
+          api-key: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}
           project: 'fa562bcf-b0c9-4adc-af63-706091e3e39a'
-          bomfilename: 'build/reports/cosmotech-gateway-bom.xml'
+          bom-filename: 'build/reports/cosmotech-gateway-bom.xml'
+      - name: Upload cyclonedx bom to dependency (tag)
+        if: ${{ github.ref_type == 'tag' }}
+        uses: DependencyTrack/gh-upload-sbom@v4
+        with:
+          server-hostname: ${{ secrets.DEPENDENCY_TRACK_SERVER_HOSTNAME }}
+          api-key: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}
+          project-name: cosmotech-gateway
+          project-version: ${{ github.ref_name }}
+          parent: 'fa562bcf-b0c9-4adc-af63-706091e3e39a'
+          auto-create: true
+          bom-filename: 'build/reports/cosmotech-gateway-bom.xml'
+
