@@ -21,7 +21,7 @@ plugins {
   id("project-report")
   id("dev.detekt") version "2.0.0-alpha.6"
   id("com.google.cloud.tools.jib") version "3.5.4" apply true
-  id("com.diffplug.spotless") version "8.11.0" apply true
+  id("com.diffplug.spotless") version "8.12.0" apply true
   id("org.cyclonedx.bom") version "3.6.1" apply true
   id("org.sonarqube") version "7.6.0.18749"
 }
