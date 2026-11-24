@@ -41,7 +41,7 @@ val jacksonBom = "3.3.0"
 val bcpkixVersion = "1.87"
 
 // Dependencies
-val springdocOpenApiVersion = "3.2.0"
+val springdocOpenApiVersion = "3.2.1"
 
 repositories {
   mavenCentral()
